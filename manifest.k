@@ -55,6 +55,68 @@ packer {
      version = ">= 1.0.0"
      source  = "github.com/bketelsen/incus"
    }
+ }
+}
+
+source "incus" "jammy" {
+ image        = "images:ubuntu/jammy"
+ output_image = "my-jammy-image"
+ container_name = "my-jammy"
+ reuse        = true
+}
+
+build {
+  sources = ["incus.jammy"]
+
+  provisioner "file" {
+    source      = "setup_networking.sh"
+    destination = "/var/lib/cloud/scripts/per-boot/010_setup_netorking.sh"
+    max_retries = 10
+  }
+  provisioner "shell" {
+    inline = [
+      "chmod +x /var/lib/cloud/scripts/per-boot/010_setup_netorking.sh",
+    ]
+  }
+
+  provisioner "file" {
+    source      = "cloud-init.yaml"
+    destination = "/etc/cloud/cloud.cfg.d/custom-cloud-init.cfg"
+    max_retries = 10
+  }
+
+  provisioner "shell" {
+    inline = [
+      "cloud-init status --wait",
+    ]
+  }
+
+  provisioner "shell" {
+    scripts = [
+      "provision.sh",
+    ]
+  }
+}
+
+
+    """
+    }
+
+    {
+        notes = r"""
+
+https://github.com/bketelsen/packer-plugin-incus?tab=readme-ov-file#packer-plugin-incus
+
+      """
+        hcl = r"""
+
+
+packer {
+ required_plugins {
+   incus = {
+     version = ">= 1.0.0"
+     source  = "github.com/bketelsen/incus"
+   }
    ansible = {
      version = "~> 1"
      source = "github.com/hashicorp/ansible"
@@ -85,7 +147,7 @@ build {
   }
 
   provisioner "file" {
-    source      = "{{ cloud_init }}"
+    source      = "cloud-init.yaml"
     destination = "/etc/cloud/cloud.cfg.d/custom-cloud-init.cfg"
     max_retries = 10
   }
@@ -106,4 +168,5 @@ build {
 
     """
     }
+
 ]}
